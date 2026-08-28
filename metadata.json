@@ -1,0 +1,6 @@
+{
+  "name": "Earn Hub",
+  "description": "Earn Hub - Daily reward earning app with lucky spin wheel, interactive games, watch & earn videos, scratch cards, tasks and referral rewards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

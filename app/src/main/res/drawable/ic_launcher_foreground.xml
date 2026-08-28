@@ -1,0 +1,58 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer Glow Ring -->
+    <path
+        android:fillColor="#33FFD700"
+        android:pathData="M54,54m-33,0a33,33 0,1,1 66,0a33,33 0,1,1 -66,0" />
+
+    <!-- Coin Outer Rim Base (Gold Gradient) -->
+    <path
+        android:pathData="M54,54m-27,0a27,27 0,1,1 54,0a27,27 0,1,1 -54,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="30"
+                android:startY="30"
+                android:endX="78"
+                android:endY="78"
+                android:type="linear">
+                <item android:color="#FFE873" android:offset="0.0" />
+                <item android:color="#FFB300" android:offset="0.5" />
+                <item android:color="#FF8F00" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Coin Inner Inset -->
+    <path
+        android:pathData="M54,54m-22,0a22,22 0,1,1 44,0a22,22 0,1,1 -44,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="32"
+                android:startY="32"
+                android:endX="76"
+                android:endY="76"
+                android:type="linear">
+                <item android:color="#FFC107" android:offset="0.0" />
+                <item android:color="#FFA000" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Coin Center Star / Rupee Symbol / Diamond -->
+    <!-- Star & Lightning Center -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,39 L57.5,47.5 L66.5,49 L60,55 L61.5,64 L54,59.5 L46.5,64 L48,55 L41.5,49 L50.5,47.5 Z" />
+
+    <!-- Sparkle Stars -->
+    <path
+        android:fillColor="#FFF9C4"
+        android:pathData="M35,35 L36.5,39 L40.5,40.5 L36.5,42 L35,46 L33.5,42 L29.5,40.5 L33.5,39 Z" />
+    <path
+        android:fillColor="#FFF9C4"
+        android:pathData="M73,33 L74.2,36.5 L77.5,37.8 L74.2,39 L73,42.5 L71.8,39 L68.5,37.8 L71.8,36.5 Z" />
+</vector>
