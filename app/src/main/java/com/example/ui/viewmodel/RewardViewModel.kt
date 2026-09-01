@@ -4,8 +4,11 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
+import com.example.data.model.OfferQuestion
+import com.example.data.model.OfferwallPartner
 import com.example.data.model.ScratchCard
 import com.example.data.model.TaskItem
+import com.example.data.model.TournamentItem
 import com.example.data.model.TransactionRecord
 import com.example.data.model.TransactionType
 import com.example.data.model.UserStats
@@ -21,12 +24,14 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
+
 enum class AppTab {
     HOME,
     GAMES,
     SPIN,
     WATCH,
     TASKS,
+    TOURNAMENTS,
     REFERRAL,
     WALLET,
     ADMIN
@@ -176,6 +181,157 @@ class RewardViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _isVideoClaimable = MutableStateFlow(false)
     val isVideoClaimable: StateFlow<Boolean> = _isVideoClaimable.asStateFlow()
+
+    // Offerwall Partners State
+    private val _offerwalls = MutableStateFlow(
+        listOf(
+            OfferwallPartner(
+                id = "adgate",
+                name = "AdGate Media",
+                badge = "🔥 3X COINS",
+                payoutMultiplier = "Up to 5,000 Coins",
+                description = "Download apps, reach in-game milestones & unlock high instant rewards.",
+                availableOffers = 48,
+                gradientColors = listOf(0xFF6A11CB, 0xFF2575FC)
+            ),
+            OfferwallPartner(
+                id = "tapjoy",
+                name = "Tapjoy Rewards",
+                badge = "⚡ INSTANT PAY",
+                payoutMultiplier = "Up to 10,000 Coins",
+                description = "Play top trending games & complete arcade levels to earn big coins.",
+                availableOffers = 62,
+                gradientColors = listOf(0xFFFF416C, 0xFFFF4B2B)
+            ),
+            OfferwallPartner(
+                id = "fyber",
+                name = "Fyber OfferWall",
+                badge = "⭐ POPULAR",
+                payoutMultiplier = "Up to 3,500 Coins",
+                description = "Interactive brand surveys, trial registrations and quick installs.",
+                availableOffers = 35,
+                gradientColors = listOf(0xFF11998E, 0xFF38EF7D)
+            ),
+            OfferwallPartner(
+                id = "cpalead",
+                name = "CPALead Express",
+                badge = "🚀 FAST 1-MIN",
+                payoutMultiplier = "Up to 1,800 Coins",
+                description = "Quick 60-second quiz & email survey verification tasks.",
+                availableOffers = 29,
+                gradientColors = listOf(0xFFF7971E, 0xFFFFD200)
+            ),
+            OfferwallPartner(
+                id = "offertoro",
+                name = "OfferToro Premium",
+                badge = "💎 HIGH VALUE",
+                payoutMultiplier = "Up to 8,000 Coins",
+                description = "Premium game passes, subscriptions, and high-yield video task bundles.",
+                availableOffers = 41,
+                gradientColors = listOf(0xFF8E2DE2, 0xFF4A00E0)
+            )
+        )
+    )
+    val offerwalls: StateFlow<List<OfferwallPartner>> = _offerwalls.asStateFlow()
+
+    // Tournament Hub State
+    private val _tournaments = MutableStateFlow(
+        listOf(
+            TournamentItem(
+                id = "t_ludo_1",
+                title = "Ludo King Championship 🎲",
+                gameType = "LUDO",
+                subtitle = "1v1 Quick Match • Winner Takes All",
+                entryFeeCoins = 50,
+                prizePoolCoins = 450,
+                status = "LIVE_NOW",
+                scheduleTime = "Every 15 Minutes",
+                totalSlots = 100,
+                filledSlots = 88,
+                isJoined = false,
+                roomId = "LUDO-ROOM-8821",
+                roomPassword = "WIN77",
+                matchType = "1v1 Classic"
+            ),
+            TournamentItem(
+                id = "t_snakes_1",
+                title = "Saamp Seedhi Pro (Snakes & Ladders) 🐍",
+                gameType = "SNAKES_LADDERS",
+                subtitle = "Fast 50-Step Race • Top 3 Win",
+                entryFeeCoins = 30,
+                prizePoolCoins = 300,
+                status = "LIVE_NOW",
+                scheduleTime = "Starting in 5 min",
+                totalSlots = 50,
+                filledSlots = 42,
+                isJoined = false,
+                roomId = "SNAKE-PASS-4920",
+                roomPassword = "LUCK9",
+                matchType = "4-Player Table"
+            ),
+            TournamentItem(
+                id = "t_ff_1",
+                title = "Free Fire MAX Diamond Room 💥",
+                gameType = "FREE_FIRE",
+                subtitle = "Bermuda Solo / Squad Battle Royale • Per Kill +200 Coins",
+                entryFeeCoins = 100,
+                prizePoolCoins = 2500,
+                perKillCoins = 200,
+                status = "REGISTRATION_OPEN",
+                scheduleTime = "Tonight at 8:00 PM",
+                totalSlots = 48,
+                filledSlots = 39,
+                isJoined = false,
+                roomId = "FF-CUSTOM-ROOM-9182",
+                roomPassword = "BOOYAH-PRO",
+                matchType = "Solo Clash Squad"
+            ),
+            TournamentItem(
+                id = "t_bgmi_1",
+                title = "BGMI Erangel Squad Cup 🏆",
+                gameType = "BGMI",
+                subtitle = "Erangel Classic Custom Room • Chicken Dinner Grand Pool",
+                entryFeeCoins = 150,
+                prizePoolCoins = 5000,
+                perKillCoins = 250,
+                status = "COMING_SOON",
+                scheduleTime = "Coming Soon (Next Room Opening)",
+                totalSlots = 100,
+                filledSlots = 94,
+                isJoined = false,
+                roomId = "BGMI-SQUAD-1004",
+                roomPassword = "PUBG-WINNER",
+                matchType = "Squad TPP"
+            )
+        )
+    )
+    val tournaments: StateFlow<List<TournamentItem>> = _tournaments.asStateFlow()
+
+    // Mega Offer & Super Offer Questions
+    private val megaQuestions = listOf(
+        OfferQuestion(1, "What is the capital city of India?", listOf("Mumbai", "New Delhi", "Kolkata", "Bengaluru"), 1),
+        OfferQuestion(2, "Which mobile game is famous for 'Winner Winner Chicken Dinner'?", listOf("Candy Crush", "Free Fire", "BGMI / PUBG", "Subway Surfers"), 2),
+        OfferQuestion(3, "In Ludo, what roll on the dice lets you bring out a token?", listOf("1 only", "6 only", "Both 1 and 6", "4 only"), 1),
+        OfferQuestion(4, "What does UPI stand for in digital payments?", listOf("Unified Payments Interface", "Universal Public Internet", "Unique Phone Index", "United Pay India"), 0),
+        OfferQuestion(5, "How many players are in a standard cricket team on field?", listOf("9", "10", "11", "12"), 2),
+        OfferQuestion(6, "Which company developed the Android Operating System?", listOf("Apple", "Microsoft", "Google", "Samsung"), 2),
+        OfferQuestion(7, "What is the currency symbol '₹' used for?", listOf("Indian Rupee", "US Dollar", "British Pound", "Euro"), 0),
+        OfferQuestion(8, "Which of these is used for online shopping deliveries?", listOf("Amazon & Flipkart", "Google Maps", "Calculator", "Camera"), 0),
+        OfferQuestion(9, "What happens when you land on a ladder in Snakes and Ladders?", listOf("Go Down", "Climb Up Fast", "Lose Coins", "Wait 1 Turn"), 1),
+        OfferQuestion(10, "What is the maximum number of gems in the 25 Gems Challenge?", listOf("10", "20", "25 Gems", "50"), 2)
+    )
+
+    private val _currentMegaQuestionIndex = MutableStateFlow(0)
+    val currentMegaQuestionIndex: StateFlow<Int> = _currentMegaQuestionIndex.asStateFlow()
+
+    private val _isMegaOfferDialogVisible = MutableStateFlow(false)
+    val isMegaOfferDialogVisible: StateFlow<Boolean> = _isMegaOfferDialogVisible.asStateFlow()
+
+    private val _isSuperOfferMode = MutableStateFlow(false)
+    val isSuperOfferMode: StateFlow<Boolean> = _isSuperOfferMode.asStateFlow()
+
+    private val _isOfferwallDetailVisible = MutableStateFlow<OfferwallPartner?>(null)
+    val isOfferwallDetailVisible: StateFlow<OfferwallPartner?> = _isOfferwallDetailVisible.asStateFlow()
 
     // Celebration Dialog
     private val _celebration = MutableStateFlow(CelebrationReward("", 0L, isVisible = false))
@@ -768,7 +924,7 @@ class RewardViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             val (success, message) = repository.applyReferralCode(code)
             if (success) {
-                showCelebration("Referral Bonus", 250, message)
+                showCelebration("Referral Bonus", 500, message)
             } else {
                 _userMessage.value = message
             }
@@ -778,16 +934,120 @@ class RewardViewModel(application: Application) : AndroidViewModel(application) 
     fun simulateFriendJoined() {
         viewModelScope.launch {
             val bonus = repository.simulateFriendInvite()
-            showCelebration("Friend Joined!", bonus, "A friend signed up using your link!")
+            showCelebration("Friend Joined! 👥", bonus, "A friend signed up using your code! +500 Coins")
+        }
+    }
+
+    // --- MEGA / SUPER OFFER (25 GEMS CHALLENGE) ---
+    fun openMegaOffer(isSuper: Boolean = false) {
+        _isSuperOfferMode.value = isSuper
+        _currentMegaQuestionIndex.value = Random.nextInt(megaQuestions.size)
+        _isMegaOfferDialogVisible.value = true
+    }
+
+    fun closeMegaOffer() {
+        _isMegaOfferDialogVisible.value = false
+    }
+
+    fun getActiveMegaQuestion(): OfferQuestion {
+        return megaQuestions[_currentMegaQuestionIndex.value.coerceIn(0, megaQuestions.size - 1)]
+    }
+
+    fun answerMegaOfferQuestion(selectedOptionIndex: Int) {
+        val isSuper = _isSuperOfferMode.value
+        val q = getActiveMegaQuestion()
+        val isCorrect = (selectedOptionIndex == q.correctIndex)
+
+        viewModelScope.launch {
+            val (newProg, coinsWon, gemsWon) = repository.advanceMegaOfferProgress(isSuper)
+            _currentMegaQuestionIndex.value = Random.nextInt(megaQuestions.size)
+            val offerName = if (isSuper) "Super Offer" else "Mega Offer"
+
+            if (newProg >= 25) {
+                showCelebration(
+                    "🏆 Grand Milestone Achieved!",
+                    coinsWon,
+                    "Awesome! You completed all 25 Steps in $offerName! +$gemsWon Gem & Mega Bonus Coins credited!"
+                )
+                _isMegaOfferDialogVisible.value = false
+            } else {
+                showCelebration(
+                    "Step $newProg/25 Completed! 💎",
+                    coinsWon,
+                    "Watched Ad & answered question! +$gemsWon Gem & +$coinsWon Coins added!"
+                )
+            }
+        }
+    }
+
+    fun convertGemsToCoins(gemAmount: Long) {
+        viewModelScope.launch {
+            val (success, message) = repository.convertGemsToCoins(gemAmount)
+            if (success) {
+                showCelebration("Gems Exchanged! 💎", gemAmount * 100L, message)
+            } else {
+                _userMessage.value = message
+            }
+        }
+    }
+
+    // --- OFFERWALL DETAIL & SIMULATION ---
+    fun openOfferwallDetail(partner: OfferwallPartner) {
+        _isOfferwallDetailVisible.value = partner
+    }
+
+    fun closeOfferwallDetail() {
+        _isOfferwallDetailVisible.value = null
+    }
+
+    fun completeOfferwallTask(partnerName: String, coins: Long) {
+        viewModelScope.launch {
+            repository.addCoins(
+                coins,
+                "$partnerName Task Payout 🚀",
+                TransactionType.OFFERWALL_REWARD,
+                "Offer verified and credited from $partnerName offerwall partner."
+            )
+            _isOfferwallDetailVisible.value = null
+            showCelebration("Offerwall Reward! 💰", coins, "+$coins Coins credited from $partnerName!")
+        }
+    }
+
+    // --- TOURNAMENTS HUB ---
+    fun joinTournament(item: TournamentItem) {
+        viewModelScope.launch {
+            val (success, message) = repository.joinTournament(item.id, item.title, item.entryFeeCoins)
+            if (success) {
+                _tournaments.value = _tournaments.value.map {
+                    if (it.id == item.id) it.copy(isJoined = true, filledSlots = it.filledSlots + 1) else it
+                }
+                showCelebration("Tournament Registered! ⚔️", 0L, message)
+            } else {
+                _userMessage.value = message
+            }
         }
     }
 
     // --- WITHDRAWAL ---
-    fun requestWithdrawal(method: String, coins: Long, amountFormatted: String, destination: String) {
+    fun requestWithdrawal(
+        method: String,
+        coins: Long,
+        amountFormatted: String,
+        destination: String,
+        accountHolderName: String = "",
+        ifscCode: String = ""
+    ) {
         viewModelScope.launch {
-            val (success, message) = repository.requestWithdrawal(method, coins, amountFormatted, destination)
+            val (success, message) = repository.requestWithdrawal(
+                method = method,
+                coins = coins,
+                amountFormatted = amountFormatted,
+                destination = destination,
+                accountHolderName = accountHolderName,
+                ifscCode = ifscCode
+            )
             if (success) {
-                showCelebration("Withdrawal Requested", 0L, message)
+                showCelebration("Withdrawal Submitted! 🚀", 0L, message)
             } else {
                 _userMessage.value = message
             }
@@ -808,9 +1068,19 @@ class RewardViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     // --- ADMIN PANEL ACTIONS ---
-    fun approveWithdrawal(withdrawalId: Long) {
+    fun approveWithdrawalWithVoucher(
+        withdrawalId: Long,
+        voucherCode: String? = null,
+        utrRef: String? = null,
+        note: String? = null
+    ) {
         viewModelScope.launch {
-            val (success, message) = repository.approveWithdrawal(withdrawalId)
+            val (success, message) = repository.approveWithdrawalWithVoucher(
+                withdrawalId = withdrawalId,
+                voucherCode = voucherCode,
+                utrReference = utrRef,
+                adminNote = note
+            )
             _userMessage.value = message
             if (success) {
                 showCelebration("Withdrawal Approved! 💰", 0L, message)
@@ -839,6 +1109,13 @@ class RewardViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun adminAdjustGems(deltaGems: Long, reason: String) {
+        viewModelScope.launch {
+            val (success, message) = repository.adminAdjustUserGems(deltaGems, reason)
+            _userMessage.value = message
+        }
+    }
+
     fun adminResetLimits(newSpins: Int = 10, newCards: Int = 5) {
         viewModelScope.launch {
             val (success, message) = repository.adminResetDailyLimits(newSpins, newCards)
@@ -853,3 +1130,4 @@ class RewardViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 }
+

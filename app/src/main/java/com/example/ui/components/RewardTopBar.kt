@@ -65,6 +65,7 @@ import com.example.ui.viewmodel.CelebrationReward
 @Composable
 fun RewardTopBar(
     coins: Long,
+    gems: Long = 0,
     streakDays: Int,
     onWalletClick: () -> Unit,
     onStreakClick: () -> Unit,
@@ -81,7 +82,7 @@ fun RewardTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -116,72 +117,36 @@ fun RewardTopBar(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 }
-                Text(
-                    text = "Play • Earn • Instant Redeem",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(start = 40.dp)
-                )
             }
 
-            // Streak, Coins & Admin Buttons
+            // Gems, Coins, Streak & Admin Buttons
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                // Admin Quick Button
+                // Gems Pill (Cyan jewel)
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFF261042),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF8B5CF6)),
+                    color = Color(0xFF06283D),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF06B6D4)),
                     modifier = Modifier
-                        .testTag("admin_top_bar_btn")
-                        .clickable { onAdminClick() }
+                        .testTag("gems_pill")
+                        .clickable { onWalletClick() }
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = "Admin Panel",
-                            tint = Color(0xFFC4B5FD),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Admin",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            color = Color(0xFFEDE9FE)
-                        )
-                    }
-                }
-
-                // Streak Pill
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFF3B1520),
-                    modifier = Modifier
-                        .testTag("streak_pill")
-                        .clickable { onStreakClick() }
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Whatshot,
-                            contentDescription = "Streak",
-                            tint = Color(0xFFFF5722),
-                            modifier = Modifier.size(15.dp)
+                            text = "💎",
+                            fontSize = 12.sp
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = "${streakDays}d",
+                            text = "$gems",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
-                            color = Color(0xFFFFCCBC)
+                            color = Color(0xFF67E8F9)
                         )
                     }
                 }
@@ -201,6 +166,7 @@ fun RewardTopBar(
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = Color(0xFF2A1C06),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, GoldAccent),
                     modifier = Modifier
                         .scale(scale)
                         .testTag("wallet_pill")
@@ -208,20 +174,49 @@ fun RewardTopBar(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.MonetizationOn,
                             contentDescription = "Coins",
                             tint = GoldAccent,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
                         Text(
                             text = "%,d".format(coins),
                             fontWeight = FontWeight.Black,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             color = GoldYellow
+                        )
+                    }
+                }
+
+                // Admin Quick Button
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFF261042),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF8B5CF6)),
+                    modifier = Modifier
+                        .testTag("admin_top_bar_btn")
+                        .clickable { onAdminClick() }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Security,
+                            contentDescription = "Admin Panel",
+                            tint = Color(0xFFC4B5FD),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = "Admin",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = Color(0xFFEDE9FE)
                         )
                     }
                 }

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.OndemandVideo
 import androidx.compose.material.icons.filled.People
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.Casino
+import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.People
@@ -26,12 +28,12 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.GoldAccent
+import com.example.ui.theme.NeonPurple
 import com.example.ui.viewmodel.AppTab
 
 @Composable
@@ -46,6 +48,7 @@ fun RewardBottomNavBar(
         windowInsets = WindowInsets.navigationBars,
         tonalElevation = 8.dp
     ) {
+        // 1. Home
         NavigationBarItem(
             selected = selectedTab == AppTab.HOME,
             onClick = { onTabSelected(AppTab.HOME) },
@@ -56,7 +59,7 @@ fun RewardBottomNavBar(
                     modifier = Modifier.size(22.dp)
                 )
             },
-            label = { Text("Home", fontSize = 11.sp, fontWeight = if (selectedTab == AppTab.HOME) FontWeight.Bold else FontWeight.Normal) },
+            label = { Text("Home", fontSize = 10.sp, fontWeight = if (selectedTab == AppTab.HOME) FontWeight.Bold else FontWeight.Normal) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = GoldAccent,
                 selectedTextColor = GoldAccent,
@@ -65,6 +68,27 @@ fun RewardBottomNavBar(
             modifier = Modifier.testTag("nav_tab_home")
         )
 
+        // 2. Tournaments (Arena for Ludo, Saamp Seedhi, FF, BGMI)
+        NavigationBarItem(
+            selected = selectedTab == AppTab.TOURNAMENTS,
+            onClick = { onTabSelected(AppTab.TOURNAMENTS) },
+            icon = {
+                Icon(
+                    imageVector = if (selectedTab == AppTab.TOURNAMENTS) Icons.Filled.EmojiEvents else Icons.Outlined.EmojiEvents,
+                    contentDescription = "Arena",
+                    modifier = Modifier.size(22.dp)
+                )
+            },
+            label = { Text("Arena", fontSize = 10.sp, fontWeight = if (selectedTab == AppTab.TOURNAMENTS) FontWeight.Bold else FontWeight.Normal) },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = GoldAccent,
+                selectedTextColor = GoldAccent,
+                indicatorColor = MaterialTheme.colorScheme.primaryContainer
+            ),
+            modifier = Modifier.testTag("nav_tab_tournaments")
+        )
+
+        // 3. Games
         NavigationBarItem(
             selected = selectedTab == AppTab.GAMES,
             onClick = { onTabSelected(AppTab.GAMES) },
@@ -75,7 +99,7 @@ fun RewardBottomNavBar(
                     modifier = Modifier.size(22.dp)
                 )
             },
-            label = { Text("Games", fontSize = 11.sp, fontWeight = if (selectedTab == AppTab.GAMES) FontWeight.Bold else FontWeight.Normal) },
+            label = { Text("Games", fontSize = 10.sp, fontWeight = if (selectedTab == AppTab.GAMES) FontWeight.Bold else FontWeight.Normal) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = GoldAccent,
                 selectedTextColor = GoldAccent,
@@ -84,6 +108,7 @@ fun RewardBottomNavBar(
             modifier = Modifier.testTag("nav_tab_games")
         )
 
+        // 4. Spin
         NavigationBarItem(
             selected = selectedTab == AppTab.SPIN,
             onClick = { onTabSelected(AppTab.SPIN) },
@@ -94,7 +119,7 @@ fun RewardBottomNavBar(
                     modifier = Modifier.size(22.dp)
                 )
             },
-            label = { Text("Spin", fontSize = 11.sp, fontWeight = if (selectedTab == AppTab.SPIN) FontWeight.Bold else FontWeight.Normal) },
+            label = { Text("Spin", fontSize = 10.sp, fontWeight = if (selectedTab == AppTab.SPIN) FontWeight.Bold else FontWeight.Normal) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = GoldAccent,
                 selectedTextColor = GoldAccent,
@@ -103,6 +128,7 @@ fun RewardBottomNavBar(
             modifier = Modifier.testTag("nav_tab_spin")
         )
 
+        // 5. Watch Ads
         NavigationBarItem(
             selected = selectedTab == AppTab.WATCH,
             onClick = { onTabSelected(AppTab.WATCH) },
@@ -113,7 +139,7 @@ fun RewardBottomNavBar(
                     modifier = Modifier.size(22.dp)
                 )
             },
-            label = { Text("Watch", fontSize = 11.sp, fontWeight = if (selectedTab == AppTab.WATCH) FontWeight.Bold else FontWeight.Normal) },
+            label = { Text("Watch", fontSize = 10.sp, fontWeight = if (selectedTab == AppTab.WATCH) FontWeight.Bold else FontWeight.Normal) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = GoldAccent,
                 selectedTextColor = GoldAccent,
@@ -122,6 +148,7 @@ fun RewardBottomNavBar(
             modifier = Modifier.testTag("nav_tab_watch")
         )
 
+        // 6. Tasks / Offerwalls
         NavigationBarItem(
             selected = selectedTab == AppTab.TASKS,
             onClick = { onTabSelected(AppTab.TASKS) },
@@ -132,7 +159,7 @@ fun RewardBottomNavBar(
                     modifier = Modifier.size(22.dp)
                 )
             },
-            label = { Text("Tasks", fontSize = 11.sp, fontWeight = if (selectedTab == AppTab.TASKS) FontWeight.Bold else FontWeight.Normal) },
+            label = { Text("Tasks", fontSize = 10.sp, fontWeight = if (selectedTab == AppTab.TASKS) FontWeight.Bold else FontWeight.Normal) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = GoldAccent,
                 selectedTextColor = GoldAccent,
@@ -141,25 +168,7 @@ fun RewardBottomNavBar(
             modifier = Modifier.testTag("nav_tab_tasks")
         )
 
-        NavigationBarItem(
-            selected = selectedTab == AppTab.REFERRAL,
-            onClick = { onTabSelected(AppTab.REFERRAL) },
-            icon = {
-                Icon(
-                    imageVector = if (selectedTab == AppTab.REFERRAL) Icons.Filled.People else Icons.Outlined.People,
-                    contentDescription = "Refer",
-                    modifier = Modifier.size(22.dp)
-                )
-            },
-            label = { Text("Refer", fontSize = 11.sp, fontWeight = if (selectedTab == AppTab.REFERRAL) FontWeight.Bold else FontWeight.Normal) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = GoldAccent,
-                selectedTextColor = GoldAccent,
-                indicatorColor = MaterialTheme.colorScheme.primaryContainer
-            ),
-            modifier = Modifier.testTag("nav_tab_referral")
-        )
-
+        // 7. Wallet
         NavigationBarItem(
             selected = selectedTab == AppTab.WALLET,
             onClick = { onTabSelected(AppTab.WALLET) },
@@ -170,7 +179,7 @@ fun RewardBottomNavBar(
                     modifier = Modifier.size(22.dp)
                 )
             },
-            label = { Text("Wallet", fontSize = 11.sp, fontWeight = if (selectedTab == AppTab.WALLET) FontWeight.Bold else FontWeight.Normal) },
+            label = { Text("Wallet", fontSize = 10.sp, fontWeight = if (selectedTab == AppTab.WALLET) FontWeight.Bold else FontWeight.Normal) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = GoldAccent,
                 selectedTextColor = GoldAccent,

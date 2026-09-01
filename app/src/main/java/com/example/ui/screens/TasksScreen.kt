@@ -1,10 +1,13 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,10 +25,12 @@ import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -56,26 +61,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.data.model.OfferwallPartner
 import com.example.data.model.ScratchCard
 import com.example.data.model.TaskCategory
 import com.example.data.model.TaskItem
 import com.example.ui.components.InteractiveScratchCard
 import com.example.ui.theme.CoralRed
 import com.example.ui.theme.EmeraldGreen
+import com.example.ui.theme.GemCyan
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldOrange
 import com.example.ui.theme.GoldYellow
+import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.SkyBlue
 
 @Composable
 fun TasksScreen(
     tasks: List<TaskItem>,
     scratchCards: List<ScratchCard>,
+    offerwalls: List<OfferwallPartner> = emptyList(),
     onCompleteTask: (TaskItem) -> Unit,
     onScratchCard: (ScratchCard) -> Unit,
+    onOpenOfferwallDetail: (OfferwallPartner) -> Unit = {},
+    onOpenMegaOffer: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var selectedSection by remember { mutableIntStateOf(0) } // 0: Tasks, 1: Scratch Cards
+    var selectedSection by remember { mutableIntStateOf(0) } // 0: Offerwalls & Mega, 1: Daily Tasks, 2: Scratch Cards
     var activeSurveyTask by remember { mutableStateOf<TaskItem?>(null) }
 
     Column(
@@ -103,170 +114,262 @@ fun TasksScreen(
             Tab(
                 selected = selectedSection == 0,
                 onClick = { selectedSection = 0 },
-                text = {
-                    Text(
-                        "Offers & Tasks",
-                        fontWeight = if (selectedSection == 0) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 14.sp
-                    )
-                },
-                modifier = Modifier.testTag("tab_tasks_offers")
+                text = { Text("🌐 OfferWalls", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                selectedContentColor = GoldAccent,
+                unselectedContentColor = Color(0xFF94A3B8)
             )
             Tab(
                 selected = selectedSection == 1,
                 onClick = { selectedSection = 1 },
-                text = {
-                    Text(
-                        "Scratch & Win",
-                        fontWeight = if (selectedSection == 1) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 14.sp
-                    )
-                },
-                modifier = Modifier.testTag("tab_tasks_scratch")
+                text = { Text("📋 Tasks", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                selectedContentColor = GoldAccent,
+                unselectedContentColor = Color(0xFF94A3B8)
+            )
+            Tab(
+                selected = selectedSection == 2,
+                onClick = { selectedSection = 2 },
+                text = { Text("🎁 Scratch", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                selectedContentColor = GoldAccent,
+                unselectedContentColor = Color(0xFF94A3B8)
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
+        // SECTION 0: OFFERWALLS & MEGA OFFERS
         if (selectedSection == 0) {
-            // Tasks & Surveys List
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Mega & Super Offers Banners
                 item {
                     Card(
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF221142)),
-                        modifier = Modifier.fillMaxWidth()
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF111E38)),
+                        border = BorderStroke(1.dp, GemCyan),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenMegaOffer(false) }
+                            .testTag("tasks_mega_offer_banner")
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(Brush.linearGradient(listOf(Color(0xFF38BDF8), Color(0xFF0284C7)))),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Assignment,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = GemCyan.copy(alpha = 0.2f)
+                                ) {
+                                    Text(
+                                        text = "💎 25 GEMS CHALLENGE",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = GemCyan,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Daily Offers & Surveys",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    text = "Mega Offer: Collect 25 Gems",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 15.sp,
                                     color = Color.White
                                 )
                                 Text(
-                                    text = "Complete high-paying missions to earn extra coins",
+                                    text = "Answer trivia + watch sponsor video = 2,500 Coins Bonus!",
                                     fontSize = 12.sp,
                                     color = Color(0xFFCBD5E1)
                                 )
                             }
+
+                            Button(
+                                onClick = { onOpenMegaOffer(false) },
+                                colors = ButtonDefaults.buttonColors(containerColor = GemCyan),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Play 💎", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
                         }
                     }
                 }
 
-                items(tasks) { task ->
-                    TaskCardItem(
-                        task = task,
-                        onClick = {
-                            if (!task.isCompleted) {
-                                if (task.category == TaskCategory.SURVEY) {
-                                    activeSurveyTask = task
-                                } else {
-                                    onCompleteTask(task)
-                                }
-                            }
-                        }
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-        } else {
-            // Scratch Cards Grid / List
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
                 item {
                     Card(
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF3B1033)),
-                        modifier = Modifier.fillMaxWidth()
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF2E0F23)),
+                        border = BorderStroke(1.dp, Color(0xFFFF5722)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenMegaOffer(true) }
+                            .testTag("tasks_super_offer_banner")
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(Brush.linearGradient(listOf(Color(0xFFF43F5E), Color(0xFFBE123C)))),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CardGiftcard,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFFFF5722).copy(alpha = 0.2f)
+                                ) {
+                                    Text(
+                                        text = "🔥 SUPER GRAND POOL",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFFFAB91),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Daily Scratch Cards",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    text = "Super Offer: 5,000 Coins Vault",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 15.sp,
                                     color = Color.White
                                 )
                                 Text(
-                                    text = "Rub to reveal hidden golden coins",
+                                    text = "Exclusive premium trivia challenge with 5,000 coin milestone!",
                                     fontSize = 12.sp,
-                                    color = Color(0xFFFFCDD2)
+                                    color = Color(0xFFCBD5E1)
                                 )
+                            }
+
+                            Button(
+                                onClick = { onOpenMegaOffer(true) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Join 🔥", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             }
                         }
                     }
                 }
 
-                items(scratchCards) { card ->
-                    InteractiveScratchCard(
-                        card = card,
-                        onScratched = { onScratchCard(it) }
+                item {
+                    Text(
+                        text = "🌐 Integrated Partner OfferWalls",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 16.sp,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 6.dp)
                     )
                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                items(offerwalls) { partner ->
+                    Card(
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF160D2C)),
+                        border = BorderStroke(1.dp, Color(0xFF2E1A56)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenOfferwallDetail(partner) }
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = partner.name,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 16.sp,
+                                            color = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = NeonPurple.copy(alpha = 0.2f)
+                                        ) {
+                                            Text(
+                                                text = partner.badge,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = NeonPurple,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = partner.payoutMultiplier,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = EmeraldGreen,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                }
+
+                                Button(
+                                    onClick = { onOpenOfferwallDetail(partner) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("Open Wall", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color.Black)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = partner.description,
+                                fontSize = 12.sp,
+                                color = Color(0xFFCBD5E1)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // SECTION 1: STANDARD TASKS
+        if (selectedSection == 1) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(tasks) { task ->
+                    TaskCard(
+                        task = task,
+                        onAction = {
+                            if (task.category == TaskCategory.SURVEY) {
+                                activeSurveyTask = task
+                            } else {
+                                onCompleteTask(task)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+
+        // SECTION 2: SCRATCH CARDS
+        if (selectedSection == 2) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                items(scratchCards) { card ->
+                    InteractiveScratchCard(
+                        card = card,
+                        onCardScratched = { onScratchCard(card) }
+                    )
                 }
             }
         }
     }
 
-    // Interactive Survey Dialog
-    if (activeSurveyTask != null) {
+    // Survey Task Dialog
+    activeSurveyTask?.let { survey ->
         SurveyDialog(
-            task = activeSurveyTask!!,
+            task = survey,
             onComplete = {
-                onCompleteTask(activeSurveyTask!!)
+                onCompleteTask(survey)
                 activeSurveyTask = null
             },
             onDismiss = { activeSurveyTask = null }
@@ -275,108 +378,84 @@ fun TasksScreen(
 }
 
 @Composable
-fun TaskCardItem(
+fun TaskCard(
     task: TaskItem,
-    onClick: () -> Unit
+    onAction: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1035)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF160D2C)),
+        border = BorderStroke(1.dp, if (task.isCompleted) EmeraldGreen.copy(alpha = 0.4f) else Color(0xFF2E1754)),
         modifier = Modifier
             .fillMaxWidth()
             .testTag("task_item_${task.id}")
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(
-                        when (task.category) {
-                            TaskCategory.DAILY -> Color(0xFF311B92)
-                            TaskCategory.SURVEY -> Color(0xFF004D40)
-                            TaskCategory.SOCIAL -> Color(0xFF01579B)
-                            TaskCategory.SPECIAL -> Color(0xFF880E4F)
-                        }
-                    ),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
             ) {
-                Icon(
-                    imageVector = when (task.category) {
-                        TaskCategory.SURVEY -> Icons.Default.Poll
-                        TaskCategory.SOCIAL -> Icons.Default.Share
-                        else -> Icons.Default.Star
-                    },
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = task.title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = task.description,
-                    fontSize = 12.sp,
-                    color = Color(0xFF94A3B8)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (task.isCompleted) Color(0xFF0F4A2E) else Color(0xFF2E1754)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
-                        imageVector = Icons.Default.MonetizationOn,
+                        imageVector = if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.Assignment,
                         contentDescription = null,
-                        tint = GoldAccent,
-                        modifier = Modifier.size(14.dp)
+                        tint = if (task.isCompleted) EmeraldGreen else GoldAccent,
+                        modifier = Modifier.size(22.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = task.title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = task.description,
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8)
+                    )
                     Text(
                         text = "+${task.rewardCoins} Coins",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Black,
-                        color = GoldYellow
+                        color = GoldYellow,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            if (task.isCompleted) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Completed",
-                        tint = EmeraldGreen,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Done", fontSize = 12.sp, color = EmeraldGreen, fontWeight = FontWeight.Bold)
-                }
-            } else {
-                Button(
-                    onClick = onClick,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen),
-                    modifier = Modifier.height(36.dp)
-                ) {
-                    Text(
-                        text = if (task.category == TaskCategory.SURVEY) "Start" else "Claim",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            Button(
+                onClick = onAction,
+                enabled = !task.isCompleted,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = GoldAccent,
+                    disabledContainerColor = Color(0xFF251342)
+                ),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = if (task.isCompleted) "Claimed ✓" else "Start",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = if (task.isCompleted) Color(0xFF94A3B8) else Color.Black
+                )
             }
         }
     }
@@ -388,95 +467,44 @@ fun SurveyDialog(
     onComplete: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var step by remember { mutableIntStateOf(1) }
-    var selectedOption by remember { mutableIntStateOf(-1) }
+    var answerIndex by remember { mutableStateOf<Int?>(null) }
+    val options = listOf("Very Satisfied", "Satisfied", "Neutral", "Needs More Rewards")
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF130922)),
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF140A28)),
+            border = BorderStroke(1.dp, GoldAccent),
+            modifier = Modifier.padding(8.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Question $step of 3",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GoldYellow
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-                    }
-                }
+                Text(text = "Quick 1-Minute Survey", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.White)
+                Text(text = "How is your reward earning experience on Earn Hub today?", fontSize = 13.sp, color = Color(0xFFCBD5E1), modifier = Modifier.padding(vertical = 8.dp))
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Text(
-                    text = when (step) {
-                        1 -> "What type of mobile games do you enjoy playing most?"
-                        2 -> "How often do you play games or complete offers?"
-                        else -> "Which reward payout method do you prefer?"
-                    },
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                val options = when (step) {
-                    1 -> listOf("Casual & Puzzle", "Action & Shooter", "Strategy & Arcade", "Trivia & Brain Games")
-                    2 -> listOf("Daily 1-2 hours", "3-5 times a week", "Only weekends", "Few minutes daily")
-                    else -> listOf("UPI / PayTM Cash", "PayPal USD", "Google Play Voucher", "Amazon Gift Card")
-                }
-
-                options.forEachIndexed { index, optionText ->
-                    val isSelected = selectedOption == index
+                options.forEachIndexed { idx, opt ->
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) Color(0xFF4C1D95) else Color(0xFF23133E),
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (answerIndex == idx) Color(0xFF381C6E) else Color(0xFF1E0E3B),
+                        border = BorderStroke(1.dp, if (answerIndex == idx) GoldAccent else Color(0xFF2E1754)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
-                            .clickable { selectedOption = index }
+                            .clickable { answerIndex = idx }
                     ) {
-                        Text(
-                            text = optionText,
-                            fontSize = 14.sp,
-                            color = if (isSelected) Color.White else Color(0xFFCBD5E1),
-                            modifier = Modifier.padding(14.dp)
-                        )
+                        Text(text = opt, color = Color.White, fontSize = 13.sp, modifier = Modifier.padding(12.dp))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Button(
-                    onClick = {
-                        if (step < 3) {
-                            step += 1
-                            selectedOption = -1
-                        } else {
-                            onComplete()
-                        }
-                    },
-                    enabled = selectedOption != -1,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
+                    onClick = onComplete,
+                    enabled = answerIndex != null,
+                    colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = if (step < 3) "Next Question" else "Submit & Claim +${task.rewardCoins} Coins",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Submit & Earn +${task.rewardCoins} Coins", color = Color.Black, fontWeight = FontWeight.Bold)
                 }
             }
         }

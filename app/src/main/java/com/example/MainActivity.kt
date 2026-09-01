@@ -21,6 +21,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ads.AdMobManager
 import com.example.ui.components.CelebrationDialog
+import com.example.ui.components.GemExchangeDialog
+import com.example.ui.components.MegaOfferChallengeDialog
+import com.example.ui.components.OfferwallPartnerDetailDialog
 import com.example.ui.components.RewardBottomNavBar
 import com.example.ui.components.RewardTopBar
 import com.example.ui.screens.AdminPanelScreen
@@ -29,6 +32,7 @@ import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ReferralScreen
 import com.example.ui.screens.SpinWheelScreen
 import com.example.ui.screens.TasksScreen
+import com.example.ui.screens.TournamentsScreen
 import com.example.ui.screens.WalletScreen
 import com.example.ui.screens.WatchEarnScreen
 import com.example.ui.theme.RewardCashTheme
@@ -64,6 +68,8 @@ fun RewardAppContent(
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val scratchCards by viewModel.scratchCards.collectAsStateWithLifecycle()
     val withdrawals by viewModel.withdrawals.collectAsStateWithLifecycle()
+    val tournaments by viewModel.tournaments.collectAsStateWithLifecycle()
+    val offerwalls by viewModel.offerwalls.collectAsStateWithLifecycle()
 
     val currentTab by viewModel.currentTab.collectAsStateWithLifecycle()
     val activeGame by viewModel.activeGame.collectAsStateWithLifecycle()
@@ -82,6 +88,11 @@ fun RewardAppContent(
     val isVideoPlaying by viewModel.isVideoPlaying.collectAsStateWithLifecycle()
     val videoClaimable by viewModel.isVideoClaimable.collectAsStateWithLifecycle()
 
+    val isMegaOfferDialogVisible by viewModel.isMegaOfferDialogVisible.collectAsStateWithLifecycle()
+    val isSuperOfferMode by viewModel.isSuperOfferMode.collectAsStateWithLifecycle()
+    val activeOfferwallDetail by viewModel.activeOfferwallDetail.collectAsStateWithLifecycle()
+    val isGemExchangeVisible by viewModel.isGemExchangeVisible.collectAsStateWithLifecycle()
+
     val celebration by viewModel.celebration.collectAsStateWithLifecycle()
     val userMessage by viewModel.userMessage.collectAsStateWithLifecycle()
 
@@ -99,9 +110,11 @@ fun RewardAppContent(
         topBar = {
             if (activeGame == ActiveGame.NONE && currentTab != AppTab.ADMIN) {
                 RewardTopBar(
-                    coins = userStats?.coins ?: 300L,
+                    coins = userStats?.coins ?: 500L,
+                    gems = userStats?.gems ?: 0L,
                     streakDays = userStats?.streakDays ?: 1,
                     onWalletClick = { viewModel.selectTab(AppTab.WALLET) },
+                    onGemsClick = { viewModel.showGemExchangeDialog() },
                     onStreakClick = { viewModel.claimDailyCheckIn() },
                     onAdminClick = { viewModel.selectTab(AppTab.ADMIN) }
                 )
@@ -131,7 +144,20 @@ fun RewardAppContent(
                             viewModel.selectTab(AppTab.GAMES)
                             viewModel.openGame(it)
                         },
+                        onOpenMegaOffer = { isSuper ->
+                            viewModel.openMegaOffer(isSuper)
+                        },
+                        onOpenGemExchange = {
+                            viewModel.showGemExchangeDialog()
+                        },
                         onClaimCheckIn = { viewModel.claimDailyCheckIn() }
+                    )
+                }
+                AppTab.TOURNAMENTS -> {
+                    TournamentsScreen(
+                        userStats = userStats,
+                        tournaments = tournaments,
+                        onJoinTournament = { t -> viewModel.joinTournament(t) }
                     )
                 }
                 AppTab.GAMES -> {
@@ -184,7 +210,7 @@ fun RewardAppContent(
                                 AdMobManager.showRewardedAd(
                                     activity = activity,
                                     rewardCoins = 150L,
-                                    onRewardEarned = { coins ->
+                                    onRewardEarned = {
                                         viewModel.refillSpinsWithVideo()
                                     },
                                     onAdClosed = {},
@@ -215,8 +241,7 @@ fun RewardAppContent(
                                         viewModel.awardAdMobVideoReward(coins)
                                     },
                                     onAdClosed = {},
-                                    onAdFailed = { errMsg ->
-                                        // Fallback award so user isn't stuck
+                                    onAdFailed = {
                                         viewModel.awardAdMobVideoReward(100L)
                                     }
                                 )
@@ -231,8 +256,11 @@ fun RewardAppContent(
                     TasksScreen(
                         tasks = tasks,
                         scratchCards = scratchCards,
+                        offerwalls = offerwalls,
                         onCompleteTask = { viewModel.completeTask(it) },
-                        onScratchCard = { viewModel.scratchCard(it) }
+                        onScratchCard = { viewModel.scratchCard(it) },
+                        onOpenOfferwallDetail = { viewModel.openOfferwallDetail(it) },
+                        onOpenMegaOffer = { isSuper -> viewModel.openMegaOffer(isSuper) }
                     )
                 }
                 AppTab.REFERRAL -> {
@@ -247,8 +275,8 @@ fun RewardAppContent(
                         userStats = userStats,
                         transactions = transactions,
                         withdrawals = withdrawals,
-                        onRequestWithdrawal = { method, coins, amount, destination ->
-                            viewModel.requestWithdrawal(method, coins, amount, destination)
+                        onRequestWithdrawal = { method, coins, amount, dest, holder, ifsc ->
+                            viewModel.requestWithdrawal(method, coins, amount, dest, holder, ifsc)
                         }
                     )
                 }
@@ -256,17 +284,67 @@ fun RewardAppContent(
                     AdminPanelScreen(
                         userStats = userStats,
                         withdrawals = withdrawals,
-                        onApproveWithdrawal = { viewModel.approveWithdrawal(it) },
-                        onRejectWithdrawal = { id, reason -> viewModel.rejectWithdrawal(id, reason) },
-                        onMarkUnderReview = { viewModel.markWithdrawalUnderReview(it) },
-                        onAdjustCoins = { delta, reason -> viewModel.adminAdjustCoins(delta, reason) },
-                        onResetLimits = { spins, cards -> viewModel.adminResetLimits(spins, cards) },
-                        onUpdateReferralCode = { viewModel.adminUpdateReferralCode(it) },
+                        onApproveWithdrawal = { id, voucher, utr, note ->
+                            viewModel.approveWithdrawal(id, voucher, utr, note)
+                        },
+                        onRejectWithdrawal = { id, reason ->
+                            viewModel.rejectWithdrawal(id, reason)
+                        },
+                        onMarkUnderReview = { id ->
+                            viewModel.markWithdrawalUnderReview(id)
+                        },
+                        onAdjustCoins = { delta, reason ->
+                            viewModel.adminAdjustCoins(delta, reason)
+                        },
+                        onAdjustGems = { delta, reason ->
+                            viewModel.adminAdjustGems(delta, reason)
+                        },
+                        onResetLimits = { spins, cards ->
+                            viewModel.adminResetLimits(spins, cards)
+                        },
+                        onUpdateReferralCode = { code ->
+                            viewModel.adminUpdateReferralCode(code)
+                        },
                         onExitAdmin = { viewModel.selectTab(AppTab.HOME) }
                     )
                 }
             }
         }
+    }
+
+    // 💎 Mega & Super Offer Progression Dialog
+    if (isMegaOfferDialogVisible) {
+        val currentProgress = if (isSuperOfferMode) (userStats?.superOfferProgress ?: 0) else (userStats?.megaOfferProgress ?: 0)
+        MegaOfferChallengeDialog(
+            isSuperOffer = isSuperOfferMode,
+            currentProgress = currentProgress,
+            onStepAnswered = {
+                viewModel.progressMegaOfferStep()
+            },
+            onDismiss = { viewModel.closeMegaOffer() }
+        )
+    }
+
+    // 🌐 Offerwall Detail Dialog
+    activeOfferwallDetail?.let { partner ->
+        OfferwallPartnerDetailDialog(
+            partner = partner,
+            onActionTask = { actionTitle, coinsReward ->
+                viewModel.completeOfferwallAction(actionTitle, coinsReward)
+            },
+            onDismiss = { viewModel.closeOfferwallDetail() }
+        )
+    }
+
+    // 💎 Gem Exchange Dialog
+    if (isGemExchangeVisible) {
+        GemExchangeDialog(
+            currentGems = userStats?.gems ?: 0L,
+            onConvertGems = { gems, coins ->
+                viewModel.convertGemsToCoins(gems, coins)
+            },
+            onDismiss = { viewModel.closeGemExchangeDialog() }
+        )
     }
 
     // Celebration Dialog when coins are earned

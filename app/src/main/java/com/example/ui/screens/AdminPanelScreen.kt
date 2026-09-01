@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,9 +19,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
@@ -30,6 +33,7 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CurrencyExchange
+import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MonetizationOn
@@ -80,9 +84,11 @@ import com.example.data.model.UserStats
 import com.example.data.model.WithdrawalRecord
 import com.example.ui.theme.CoralRed
 import com.example.ui.theme.EmeraldGreen
+import com.example.ui.theme.GemCyan
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldOrange
 import com.example.ui.theme.GoldYellow
+import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.SkyBlue
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -92,10 +98,11 @@ import java.util.Locale
 fun AdminPanelScreen(
     userStats: UserStats?,
     withdrawals: List<WithdrawalRecord>,
-    onApproveWithdrawal: (Long) -> Unit,
+    onApproveWithdrawal: (Long, String?, String?, String?) -> Unit,
     onRejectWithdrawal: (Long, String) -> Unit,
     onMarkUnderReview: (Long) -> Unit,
     onAdjustCoins: (Long, String) -> Unit,
+    onAdjustGems: (Long, String) -> Unit = { _, _ -> },
     onResetLimits: (Int, Int) -> Unit,
     onUpdateReferralCode: (String) -> Unit,
     onExitAdmin: () -> Unit,
@@ -103,10 +110,12 @@ fun AdminPanelScreen(
 ) {
     val context = LocalContext.current
     var selectedSection by remember { mutableIntStateOf(0) }
-    val sectionTitles = listOf("Withdrawal Approvals", "User & Coins", "App Controls", "System Stats")
+    val sectionTitles = listOf("Withdrawal Approvals", "User & Balances", "App Controls", "System Stats")
 
+    var approveDialogTarget by remember { mutableStateOf<WithdrawalRecord?>(null) }
     var rejectDialogTarget by remember { mutableStateOf<WithdrawalRecord?>(null) }
     var adjustCoinsDialogVisible by remember { mutableStateOf(false) }
+    var adjustGemsDialogVisible by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -161,7 +170,7 @@ fun AdminPanelScreen(
                             color = Color.White
                         )
                         Text(
-                            text = "Full Payout & System Control",
+                            text = "Payouts & System Management",
                             fontSize = 11.sp,
                             color = Color(0xFFC4B5FD)
                         )
@@ -224,47 +233,61 @@ fun AdminPanelScreen(
             }
         }
 
-        // Main Content View based on Selected Tab
+        // Content Sections
         when (selectedSection) {
-            0 -> {
-                AdminWithdrawalsTab(
-                    withdrawals = withdrawals,
-                    onApprove = onApproveWithdrawal,
-                    onRejectClick = { rejectDialogTarget = it },
-                    onReview = onMarkUnderReview
-                )
-            }
-            1 -> {
-                AdminUserControlsTab(
-                    userStats = userStats,
-                    onOpenAdjustCoins = { adjustCoinsDialogVisible = true },
-                    onResetLimits = onResetLimits,
-                    onUpdateReferralCode = onUpdateReferralCode
-                )
-            }
-            2 -> {
-                AdminAppControlsTab(
-                    userStats = userStats,
-                    onResetLimits = onResetLimits,
-                    onAdjustCoins = onAdjustCoins
-                )
-            }
-            3 -> {
-                AdminSystemStatsTab(
-                    userStats = userStats,
-                    withdrawals = withdrawals
-                )
-            }
+            0 -> AdminWithdrawalsSection(
+                withdrawals = withdrawals,
+                onApproveClick = { approveDialogTarget = it },
+                onRejectClick = { rejectDialogTarget = it },
+                onReview = {
+                    onMarkUnderReview(it)
+                    Toast.makeText(context, "Marked as Under Review", Toast.LENGTH_SHORT).show()
+                }
+            )
+            1 -> AdminUserSection(
+                userStats = userStats,
+                onOpenAdjustCoins = { adjustCoinsDialogVisible = true },
+                onOpenAdjustGems = { adjustGemsDialogVisible = true },
+                onResetLimits = {
+                    onResetLimits(10, 5)
+                    Toast.makeText(context, "Daily limits reset to 10 Spins & 5 Cards", Toast.LENGTH_SHORT).show()
+                }
+            )
+            2 -> AdminControlsSection(
+                userStats = userStats,
+                onUpdateReferral = { code ->
+                    onUpdateReferralCode(code)
+                    Toast.makeText(context, "Referral Code updated to: $code", Toast.LENGTH_SHORT).show()
+                }
+            )
+            3 -> AdminStatsSection(
+                userStats = userStats,
+                withdrawals = withdrawals
+            )
         }
     }
 
-    // Rejection Reason Dialog
-    if (rejectDialogTarget != null) {
-        RejectWithdrawalDialog(
-            withdrawal = rejectDialogTarget!!,
-            onConfirmReject = { reason ->
-                onRejectWithdrawal(rejectDialogTarget!!.id, reason)
+    // Approve Dialog with Voucher / UTR input
+    approveDialogTarget?.let { record ->
+        AdminApproveDialog(
+            record = record,
+            onConfirm = { voucher, utr, note ->
+                onApproveWithdrawal(record.id, voucher, utr, note)
+                approveDialogTarget = null
+                Toast.makeText(context, "Withdrawal #${record.id} Approved & Voucher Created!", Toast.LENGTH_LONG).show()
+            },
+            onDismiss = { approveDialogTarget = null }
+        )
+    }
+
+    // Reject Dialog
+    rejectDialogTarget?.let { record ->
+        AdminRejectDialog(
+            record = record,
+            onConfirm = { reason ->
+                onRejectWithdrawal(record.id, reason)
                 rejectDialogTarget = null
+                Toast.makeText(context, "Withdrawal #${record.id} Rejected and Coins Refunded", Toast.LENGTH_SHORT).show()
             },
             onDismiss = { rejectDialogTarget = null }
         )
@@ -272,29 +295,40 @@ fun AdminPanelScreen(
 
     // Adjust Coins Dialog
     if (adjustCoinsDialogVisible) {
-        AdjustCoinsDialog(
+        AdminAdjustCoinsDialog(
             currentCoins = userStats?.coins ?: 0L,
             onConfirm = { amount, reason ->
                 onAdjustCoins(amount, reason)
                 adjustCoinsDialogVisible = false
+                Toast.makeText(context, "Coins balance adjusted by $amount", Toast.LENGTH_SHORT).show()
             },
             onDismiss = { adjustCoinsDialogVisible = false }
         )
     }
+
+    // Adjust Gems Dialog
+    if (adjustGemsDialogVisible) {
+        AdminAdjustGemsDialog(
+            currentGems = userStats?.gems ?: 0L,
+            onConfirm = { delta, reason ->
+                onAdjustGems(delta, reason)
+                adjustGemsDialogVisible = false
+                Toast.makeText(context, "Gems adjusted by $delta", Toast.LENGTH_SHORT).show()
+            },
+            onDismiss = { adjustGemsDialogVisible = false }
+        )
+    }
 }
 
-// -------------------------------------------------------------------------
-// SECTION 1: WITHDRAWAL APPROVALS TAB
-// -------------------------------------------------------------------------
 @Composable
-fun AdminWithdrawalsTab(
+fun AdminWithdrawalsSection(
     withdrawals: List<WithdrawalRecord>,
-    onApprove: (Long) -> Unit,
+    onApproveClick: (WithdrawalRecord) -> Unit,
     onRejectClick: (WithdrawalRecord) -> Unit,
     onReview: (Long) -> Unit
 ) {
     var statusFilter by remember { mutableStateOf("ALL") }
-    val filters = listOf("ALL", "PENDING", "APPROVED", "REJECTED", "UNDER_REVIEW")
+    val filters = listOf("ALL", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED")
 
     val pendingCount = withdrawals.count { it.status == "PENDING" }
     val approvedCount = withdrawals.count { it.status == "APPROVED" }
@@ -306,7 +340,6 @@ fun AdminWithdrawalsTab(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            // Summary Counter Cards
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -334,7 +367,7 @@ fun AdminWithdrawalsTab(
                     modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
-                        Text(text = "Approved & Paid", fontSize = 11.sp, color = Color(0xFFB2DFDB))
+                        Text(text = "Approved & Vouchers", fontSize = 11.sp, color = Color(0xFFB2DFDB))
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "$approvedCount Completed",
@@ -347,7 +380,6 @@ fun AdminWithdrawalsTab(
             }
         }
 
-        // Filter Chips
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(filters) { filter ->
@@ -409,15 +441,11 @@ fun AdminWithdrawalsTab(
             items(filteredWithdrawals) { item ->
                 AdminWithdrawalRequestCard(
                     withdrawal = item,
-                    onApprove = { onApprove(item.id) },
+                    onApprove = { onApproveClick(item) },
                     onReject = { onRejectClick(item) },
                     onReview = { onReview(item.id) }
                 )
             }
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
@@ -429,13 +457,9 @@ fun AdminWithdrawalRequestCard(
     onReject: () -> Unit,
     onReview: () -> Unit
 ) {
-    val dateStr = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(withdrawal.timestamp))
-    val statusColor = when (withdrawal.status) {
-        "APPROVED" -> EmeraldGreen
-        "REJECTED" -> CoralRed
-        "UNDER_REVIEW" -> GoldYellow
-        else -> Color(0xFF60A5FA) // PENDING
-    }
+    val dateStr = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(withdrawal.requestedAt))
+    val isApproved = withdrawal.status == "APPROVED"
+    val isPending = withdrawal.status == "PENDING" || withdrawal.status == "UNDER_REVIEW"
 
     Card(
         shape = RoundedCornerShape(18.dp),
@@ -446,774 +470,522 @@ fun AdminWithdrawalRequestCard(
             .testTag("admin_withdrawal_item_${withdrawal.id}")
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF3B1A6E)
-                    ) {
-                        Text(
-                            text = "#ID-${withdrawal.id}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = withdrawal.method,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = statusColor.copy(alpha = 0.2f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, statusColor)
-                ) {
-                    Text(
-                        text = withdrawal.status,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black,
-                        color = statusColor,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Amount & Coins Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(text = "Requested Amount", fontSize = 11.sp, color = Color(0xFF94A3B8))
+                    Text(
+                        text = "ID: #${withdrawal.id} • ${withdrawal.method}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
                     Text(
                         text = withdrawal.amountFormatted,
-                        fontSize = 22.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
                         color = GoldYellow
                     )
                 }
 
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(text = "Coins Equivalent", fontSize = 11.sp, color = Color(0xFF94A3B8))
-                    Text(
-                        text = "%,d Coins".format(withdrawal.coinsDeducted),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Destination Account Details Box
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Color(0xFF28114C),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        text = "PAYOUT DESTINATION ACCOUNT / ID:",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFC4B5FD)
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = withdrawal.destinationAccount,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Requested at: $dateStr",
-                        fontSize = 10.sp,
-                        color = Color(0xFF94A3B8)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Direct Action Buttons for Admin
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Approve Button
-                Button(
-                    onClick = onApprove,
-                    enabled = withdrawal.status != "APPROVED",
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = EmeraldGreen,
-                        disabledContainerColor = Color(0xFF1A3828)
-                    ),
-                    modifier = Modifier
-                        .weight(1.2f)
-                        .height(42.dp)
-                        .testTag("admin_approve_btn_${withdrawal.id}")
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = when (withdrawal.status) {
+                        "APPROVED" -> EmeraldGreen.copy(alpha = 0.2f)
+                        "REJECTED" -> CoralRed.copy(alpha = 0.2f)
+                        else -> GoldYellow.copy(alpha = 0.2f)
+                    }
                 ) {
-                    Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = if (withdrawal.status == "APPROVED") "Approved" else "Approve & Pay",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Reject & Refund Button
-                Button(
-                    onClick = onReject,
-                    enabled = withdrawal.status != "REJECTED",
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = CoralRed,
-                        disabledContainerColor = Color(0xFF38151D)
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(42.dp)
-                        .testTag("admin_reject_btn_${withdrawal.id}")
-                ) {
-                    Icon(imageVector = Icons.Default.Block, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (withdrawal.status == "REJECTED") "Rejected" else "Reject",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Review Button
-                OutlinedButton(
-                    onClick = onReview,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .weight(0.9f)
-                        .height(42.dp)
-                ) {
-                    Text(text = "Hold", fontSize = 11.sp, color = Color(0xFFCBD5E1))
-                }
-            }
-        }
-    }
-}
-
-// -------------------------------------------------------------------------
-// SECTION 2: USER & COIN CONTROLS TAB
-// -------------------------------------------------------------------------
-@Composable
-fun AdminUserControlsTab(
-    userStats: UserStats?,
-    onOpenAdjustCoins: () -> Unit,
-    onResetLimits: (Int, Int) -> Unit,
-    onUpdateReferralCode: (String) -> Unit
-) {
-    var newRefCode by remember { mutableStateOf("") }
-    val context = LocalContext.current
-
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E0D3B)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Current User Stats",
-                        fontSize = 16.sp,
+                        text = withdrawal.status,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = when (withdrawal.status) {
+                            "APPROVED" -> EmeraldGreen
+                            "REJECTED" -> CoralRed
+                            else -> GoldYellow
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(text = "User Coins Balance", fontSize = 11.sp, color = Color(0xFF94A3B8))
-                            Text(
-                                text = "%,d".format(userStats?.coins ?: 0L),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Black,
-                                color = GoldYellow
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(text = "Lifetime Earnings", fontSize = 11.sp, color = Color(0xFF94A3B8))
-                            Text(
-                                text = "%,d".format(userStats?.totalEarned ?: 0L),
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = EmeraldGreen
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = "Spins Left: ${userStats?.dailySpinsLeft ?: 0}", color = Color.White, fontSize = 13.sp)
-                        Text(text = "Scratch Cards Left: ${userStats?.scratchCardsLeft ?: 0}", color = Color.White, fontSize = 13.sp)
-                        Text(text = "Streak: ${userStats?.streakDays ?: 1} Days", color = GoldYellow, fontSize = 13.sp)
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = onOpenAdjustCoins,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .testTag("admin_open_adjust_coins_btn")
-                    ) {
-                        Icon(imageVector = Icons.Default.CurrencyExchange, contentDescription = null, tint = Color(0xFF2C1B00))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Add / Deduct User Coins Directly",
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2C1B00),
-                            fontSize = 14.sp
-                        )
-                    }
                 }
             }
-        }
 
-        // Change User Referral Code
-        item {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E0D3B)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Manage Referral Code",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Current Code: ${userStats?.referralCode ?: "CASH892"}",
-                        fontSize = 13.sp,
-                        color = GoldYellow,
-                        fontWeight = FontWeight.Bold
-                    )
+            Spacer(modifier = Modifier.height(8.dp))
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = newRefCode,
-                            onValueChange = { newRefCode = it.uppercase() },
-                            placeholder = { Text("e.g. VIP2026", color = Color(0xFF64748B)) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = GoldAccent,
-                                unfocusedBorderColor = Color(0xFF4C2777)
-                            ),
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = {
-                                if (newRefCode.isNotBlank()) {
-                                    onUpdateReferralCode(newRefCode)
-                                    newRefCode = ""
-                                    Toast.makeText(context, "Referral Code updated!", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen),
-                            modifier = Modifier.height(54.dp)
-                        ) {
-                            Text("Update", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-
-        // One-Click Limit Resets
-        item {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E0D3B)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Reset User Limits & Tasks",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Instantly restore 10 spins, 5 scratch cards, and reset daily tasks.",
-                        fontSize = 12.sp,
-                        color = Color(0xFF94A3B8)
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Button(
-                        onClick = { onResetLimits(10, 5) },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SkyBlue),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(46.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Reset Daily Limits Now", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-    }
-}
-
-// -------------------------------------------------------------------------
-// SECTION 3: APP & MONETIZATION CONTROLS TAB
-// -------------------------------------------------------------------------
-@Composable
-fun AdminAppControlsTab(
-    userStats: UserStats?,
-    onResetLimits: (Int, Int) -> Unit,
-    onAdjustCoins: (Long, String) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1C0D37)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Active AdMob Monetization Configuration",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "• AdMob App ID: ca-app-pub-1601992247643052~1733291557\n• Watch & Earn Rewarded Unit: ca-app-pub-1601992247643052/8378590953\n• Game Over Interstitial Unit: ca-app-pub-1601992247643052/2384912724",
-                        fontSize = 12.sp,
-                        color = Color(0xFFCBD5E1),
-                        lineHeight = 18.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF104A33),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(12.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = EmeraldGreen)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "AdMob SDK Initialized & Ready",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        item {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1C0D37)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Reward Multiplier Shortcuts",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = { onAdjustCoins(1000, "Admin Special Event Bonus") },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6B21A8)),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("+1000 Bonus", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        Button(
-                            onClick = { onAdjustCoins(5000, "Admin VIP Jackpot") },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9A3412)),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("+5000 Jackpot", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// -------------------------------------------------------------------------
-// SECTION 4: SYSTEM STATS TAB
-// -------------------------------------------------------------------------
-@Composable
-fun AdminSystemStatsTab(
-    userStats: UserStats?,
-    withdrawals: List<WithdrawalRecord>
-) {
-    val totalWithdrawnCoins = withdrawals.filter { it.status == "APPROVED" }.sumOf { it.coinsDeducted }
-    val pendingCoins = withdrawals.filter { it.status == "PENDING" }.sumOf { it.coinsDeducted }
-
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        item {
             Text(
-                text = "System Financial Ledger",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+                text = "Destination: ${withdrawal.destination}",
+                fontSize = 12.sp,
+                color = Color(0xFFCBD5E1)
             )
-        }
 
-        item {
-            AdminStatCard(
-                title = "Total User Balance",
-                value = "%,d Coins".format(userStats?.coins ?: 0L),
-                icon = Icons.Default.MonetizationOn,
-                color = GoldYellow
-            )
-        }
-
-        item {
-            AdminStatCard(
-                title = "Total Approved Payouts",
-                value = "%,d Coins Paid".format(totalWithdrawnCoins),
-                icon = Icons.Default.CheckCircle,
-                color = EmeraldGreen
-            )
-        }
-
-        item {
-            AdminStatCard(
-                title = "Pending Withdrawal Liability",
-                value = "%,d Coins Pending".format(pendingCoins),
-                icon = Icons.Default.Payment,
-                color = Color(0xFFFF8A80)
-            )
-        }
-
-        item {
-            AdminStatCard(
-                title = "Total Invited Friends",
-                value = "${userStats?.referralCount ?: 0} Users",
-                icon = Icons.Default.People,
-                color = SkyBlue
-            )
-        }
-    }
-}
-
-@Composable
-fun AdminStatCard(
-    title: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color
-) {
-    Card(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B0C35)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(color.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column {
-                Text(text = title, fontSize = 12.sp, color = Color(0xFF94A3B8))
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color.White)
-            }
-        }
-    }
-}
-
-// -------------------------------------------------------------------------
-// REJECT DIALOG
-// -------------------------------------------------------------------------
-@Composable
-fun RejectWithdrawalDialog(
-    withdrawal: WithdrawalRecord,
-    onConfirmReject: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var reasonInput by remember { mutableStateOf("Invalid payment ID / Details mismatch") }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1A0A26)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            if (withdrawal.accountHolderName.isNotBlank()) {
                 Text(
-                    text = "Reject & Refund Withdrawal #${withdrawal.id}",
-                    fontSize = 18.sp,
+                    text = "Beneficiary: ${withdrawal.accountHolderName} | IFSC: ${withdrawal.ifscCode}",
+                    fontSize = 11.sp,
+                    color = Color(0xFF94A3B8)
+                )
+            }
+
+            Text(
+                text = "Coins Deducted: ${withdrawal.coinsDeducted} • Date: $dateStr",
+                fontSize = 11.sp,
+                color = Color(0xFF94A3B8),
+                modifier = Modifier.padding(top = 2.dp)
+            )
+
+            if (isApproved && !withdrawal.voucherCode.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "🔑 Voucher Code Issued: ${withdrawal.voucherCode}",
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = CoralRed
+                    color = EmeraldGreen
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Amount: ${withdrawal.amountFormatted} (${withdrawal.coinsDeducted} Coins)\nDestination: ${withdrawal.destinationAccount}",
-                    fontSize = 13.sp,
-                    color = Color.White
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                OutlinedTextField(
-                    value = reasonInput,
-                    onValueChange = { reasonInput = it },
-                    label = { Text("Rejection Reason (Refund to User)") },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = CoralRed,
-                        unfocusedBorderColor = Color(0xFF552233)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Cancel", color = Color.White)
-                    }
-
-                    Button(
-                        onClick = { onConfirmReject(reasonInput) },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = CoralRed),
-                        modifier = Modifier.weight(1.2f)
-                    ) {
-                        Text("Reject & Refund", fontWeight = FontWeight.Bold)
-                    }
-                }
             }
-        }
-    }
-}
 
-// -------------------------------------------------------------------------
-// ADJUST COINS DIALOG
-// -------------------------------------------------------------------------
-@Composable
-fun AdjustCoinsDialog(
-    currentCoins: Long,
-    onConfirm: (Long, String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var amountText by remember { mutableStateOf("500") }
-    var isAddition by remember { mutableStateOf(true) }
-    var reasonText by remember { mutableStateOf("Admin Manual Adjustment") }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF180A2E)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = "Adjust User Coins",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = "Current Balance: %,d Coins".format(currentCoins),
-                    fontSize = 13.sp,
-                    color = GoldYellow
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
+            if (isPending) {
+                Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = { isAddition = true },
+                        onClick = onApprove,
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen),
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isAddition) EmeraldGreen else Color(0xFF281146)
-                        ),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("admin_approve_btn_${withdrawal.id}")
                     ) {
-                        Text("+ ADD COINS", fontWeight = FontWeight.Bold)
+                        Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Approve & Code", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 12.sp)
                     }
 
-                    Button(
-                        onClick = { isAddition = false },
+                    OutlinedButton(
+                        onClick = onReject,
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (!isAddition) CoralRed else Color(0xFF281146)
-                        ),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("- DEDUCT COINS", fontWeight = FontWeight.Bold)
+                        Text("Reject", color = CoralRed, fontSize = 12.sp)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminApproveDialog(
+    record: WithdrawalRecord,
+    onConfirm: (voucherCode: String?, utrRef: String?, note: String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val isVoucherType = record.method.contains("Google Play", true) ||
+            record.method.contains("Amazon", true) ||
+            record.method.contains("Flipkart", true)
+
+    val defaultCode = when {
+        record.method.contains("Google Play", true) -> "GPAY-${(1000..9999).random()}-${(1000..9999).random()}-REDEEM"
+        record.method.contains("Amazon", true) -> "AMZ-${(100000..999999).random()}-GIFT"
+        record.method.contains("Flipkart", true) -> "FK-${(100000..999999).random()}-VOUCH"
+        else -> ""
+    }
+
+    var voucherCode by remember { mutableStateOf(defaultCode) }
+    var utrRef by remember { mutableStateOf(if (!isVoucherType) "UTR${(10000000..99999999).random()}" else "") }
+    var adminNote by remember { mutableStateOf("Payment approved and verified by Admin.") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF160A2A)),
+            border = BorderStroke(1.5.dp, EmeraldGreen),
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = "Approve Withdrawal #${record.id}",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 17.sp,
+                    color = Color.White
+                )
+                Text(
+                    text = "${record.method} • ${record.amountFormatted} -> ${record.destination}",
+                    fontSize = 12.sp,
+                    color = GoldYellow
+                )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { if (it.all { ch -> ch.isDigit() }) amountText = it },
-                    label = { Text("Coins Amount") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = GoldAccent,
-                        unfocusedBorderColor = Color(0xFF4C2777)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (isVoucherType) {
+                    OutlinedTextField(
+                        value = voucherCode,
+                        onValueChange = { voucherCode = it },
+                        label = { Text("Redeem / Gift Card Voucher Code") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = EmeraldGreen,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        modifier = Modifier.fillMaxWidth().testTag("admin_voucher_input")
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                } else {
+                    OutlinedTextField(
+                        value = utrRef,
+                        onValueChange = { utrRef = it },
+                        label = { Text("Bank UTR / UPI Transaction Reference") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = EmeraldGreen,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        modifier = Modifier.fillMaxWidth().testTag("admin_utr_input")
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
                 OutlinedTextField(
-                    value = reasonText,
-                    onValueChange = { reasonText = it },
-                    label = { Text("Reason / Note") },
-                    shape = RoundedCornerShape(12.dp),
+                    value = adminNote,
+                    onValueChange = { adminNote = it },
+                    label = { Text("Admin Note for User") },
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = EmeraldGreen,
                         focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = GoldAccent,
-                        unfocusedBorderColor = Color(0xFF4C2777)
+                        unfocusedTextColor = Color.White
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                Button(
+                    onClick = {
+                        onConfirm(
+                            if (voucherCode.isNotBlank()) voucherCode else null,
+                            if (utrRef.isNotBlank()) utrRef else null,
+                            adminNote
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().testTag("admin_confirm_approve_btn")
                 ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(12.dp),
+                    Text("Confirm & Send to User", color = Color.Black, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminRejectDialog(
+    record: WithdrawalRecord,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var reason by remember { mutableStateOf("Invalid payment details / UPI ID not found. Coins refunded.") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1C0A1F)),
+            border = BorderStroke(1.dp, CoralRed),
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(text = "Reject Request #${record.id}", fontWeight = FontWeight.Black, color = Color.White, fontSize = 16.sp)
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    label = { Text("Reason for Rejection") },
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                Button(
+                    onClick = { onConfirm(reason) },
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralRed),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Reject & Refund Coins", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminAdjustCoinsDialog(
+    currentCoins: Long,
+    onConfirm: (Long, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var amountText by remember { mutableStateOf("500") }
+    var isAdd by remember { mutableStateOf(true) }
+    var reason by remember { mutableStateOf("Admin Bonus") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF150A28)),
+            border = BorderStroke(1.dp, GoldAccent),
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(text = "Adjust User Coins", fontWeight = FontWeight.Black, color = Color.White, fontSize = 16.sp)
+                Text(text = "Current: $currentCoins Coins", color = GoldYellow, fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { isAdd = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (isAdd) EmeraldGreen else Color(0xFF2E1754)),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cancel", color = Color.White)
+                        Text("+ Add Coins", color = if (isAdd) Color.Black else Color.White)
+                    }
+                    Button(
+                        onClick = { isAdd = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (!isAdd) CoralRed else Color(0xFF2E1754)),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("- Deduct", color = Color.White)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = it.filter { ch -> ch.isDigit() } },
+                    label = { Text("Coin Amount") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Button(
+                    onClick = {
+                        val num = amountText.toLongOrNull() ?: 0L
+                        val delta = if (isAdd) num else -num
+                        onConfirm(delta, reason)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Apply Adjustment", color = Color.Black, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminAdjustGemsDialog(
+    currentGems: Long,
+    onConfirm: (Long, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var amountText by remember { mutableStateOf("10") }
+    var isAdd by remember { mutableStateOf(true) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+            border = BorderStroke(1.dp, GemCyan),
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(text = "Adjust User Gems 💎", fontWeight = FontWeight.Black, color = Color.White, fontSize = 16.sp)
+                Text(text = "Current: $currentGems Gems", color = GemCyan, fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { isAdd = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (isAdd) GemCyan else Color(0xFF1E293B)),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("+ Add Gems", color = if (isAdd) Color.Black else Color.White)
+                    }
+                    Button(
+                        onClick = { isAdd = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (!isAdd) CoralRed else Color(0xFF1E293B)),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("- Deduct", color = Color.White)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = it.filter { ch -> ch.isDigit() } },
+                    label = { Text("Gems Count") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Button(
+                    onClick = {
+                        val num = amountText.toLongOrNull() ?: 0L
+                        val delta = if (isAdd) num else -num
+                        onConfirm(delta, "Admin Gem Adjustment")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GemCyan),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save Gems", color = Color.Black, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminUserSection(
+    userStats: UserStats?,
+    onOpenAdjustCoins: () -> Unit,
+    onOpenAdjustGems: () -> Unit,
+    onResetLimits: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1D0C38)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "User Profile & Balances", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.White)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Username: ${userStats?.userName ?: "Earn Hub User"}", color = Color.White, fontSize = 13.sp)
+                    Text(text = "Coins Balance: %,d Coins".format(userStats?.coins ?: 0L), color = GoldYellow, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(text = "Gems Vault: ${userStats?.gems ?: 0L} 💎", color = GemCyan, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(text = "Mega 25 Gems Offer Progress: ${userStats?.megaOfferProgress ?: 0}/25 Steps", color = Color(0xFFCBD5E1), fontSize = 12.sp)
+                    Text(text = "Super 5K Offer Progress: ${userStats?.superOfferProgress ?: 0}/25 Steps", color = Color(0xFFCBD5E1), fontSize = 12.sp)
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onOpenAdjustCoins,
+                            colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Adjust Coins", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = onOpenAdjustGems,
+                            colors = ButtonDefaults.buttonColors(containerColor = GemCyan),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Adjust Gems 💎", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
 
-                    Button(
-                        onClick = {
-                            val parsed = amountText.toLongOrNull() ?: 0L
-                            val delta = if (isAddition) parsed else -parsed
-                            onConfirm(delta, reasonText)
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isAddition) EmeraldGreen else CoralRed
-                        ),
-                        modifier = Modifier.weight(1.2f)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = onResetLimits,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Confirm", fontWeight = FontWeight.Bold)
+                        Text("Reset Daily Spins & Scratch Limits", color = Color.White)
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminControlsSection(
+    userStats: UserStats?,
+    onUpdateReferral: (String) -> Unit
+) {
+    var newRefCode by remember { mutableStateOf(userStats?.referralCode ?: "EARNHUB100") }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1D0C38)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "App & Referral Controls", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.White)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = newRefCode,
+                        onValueChange = { newRefCode = it.uppercase() },
+                        label = { Text("Global Promo Referral Code") },
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = { onUpdateReferral(newRefCode) },
+                        colors = ButtonDefaults.buttonColors(containerColor = NeonPurple),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Update Code", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminStatsSection(
+    userStats: UserStats?,
+    withdrawals: List<WithdrawalRecord>
+) {
+    val totalApproved = withdrawals.filter { it.status == "APPROVED" }.sumOf { it.coinsDeducted }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1D0C38)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "Financial & App Analytics", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.White)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(text = "• Total Coins Minted: %,d Coins".format(userStats?.totalEarned ?: 0L), color = Color(0xFFE2E8F0))
+                    Text(text = "• Total Coins Redeemed: %,d Coins".format(totalApproved), color = GoldYellow)
+                    Text(text = "• Current Circulation: %,d Coins".format(userStats?.coins ?: 0L), color = EmeraldGreen)
+                    Text(text = "• Total Withdrawal Requests: ${withdrawals.size}", color = Color(0xFFE2E8F0))
                 }
             }
         }
