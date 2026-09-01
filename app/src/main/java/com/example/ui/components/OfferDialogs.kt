@@ -182,7 +182,7 @@ fun MegaOfferDialog(
                     fontSize = 12.sp,
                     color = Color(0xFFCBD5E1),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 8.dp, top = 2.dp)
+                    modifier = Modifier.padding(horizontal = 8.dp).padding(top = 2.dp)
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))

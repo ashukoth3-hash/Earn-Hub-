@@ -56,7 +56,9 @@ data class TransactionRecord(
     val status: String = "COMPLETED", // COMPLETED, PENDING, REJECTED
     val description: String = "",
     val voucherCode: String? = null
-)
+) {
+    val amount: Long get() = coins
+}
 
 enum class TaskCategory {
     DAILY,
@@ -104,7 +106,11 @@ data class WithdrawalRecord(
     val voucherCode: String? = null, // Redeemed Gift Code given by Admin!
     val utrReference: String? = null, // Transaction UTR / Ref No for UPI & Bank
     val adminNote: String? = null
-)
+) {
+    val amount: String get() = amountFormatted
+    val destination: String get() = destinationAccount
+    val requestedAt: Long get() = timestamp
+}
 
 data class TournamentItem(
     val id: String,

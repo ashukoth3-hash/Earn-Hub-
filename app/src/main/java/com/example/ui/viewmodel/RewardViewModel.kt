@@ -332,6 +332,10 @@ class RewardViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _isOfferwallDetailVisible = MutableStateFlow<OfferwallPartner?>(null)
     val isOfferwallDetailVisible: StateFlow<OfferwallPartner?> = _isOfferwallDetailVisible.asStateFlow()
+    val activeOfferwallDetail: StateFlow<OfferwallPartner?> = _isOfferwallDetailVisible.asStateFlow()
+
+    private val _isGemExchangeVisible = MutableStateFlow(false)
+    val isGemExchangeVisible: StateFlow<Boolean> = _isGemExchangeVisible.asStateFlow()
 
     // Celebration Dialog
     private val _celebration = MutableStateFlow(CelebrationReward("", 0L, isVisible = false))
@@ -980,6 +984,26 @@ class RewardViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun showGemExchangeDialog() {
+        _isGemExchangeVisible.value = true
+    }
+
+    fun closeGemExchangeDialog() {
+        _isGemExchangeVisible.value = false
+    }
+
+    fun progressMegaOfferStep() {
+        answerMegaOfferQuestion(getActiveMegaQuestion().correctIndex)
+    }
+
+    fun completeOfferwallAction(partnerName: String, coins: Long) {
+        completeOfferwallTask(partnerName, coins)
+    }
+
+    fun convertGemsToCoins(gemAmount: Long, coinsAmount: Long = gemAmount * 100L) {
+        convertGemsToCoins(gemAmount)
+    }
+
     fun convertGemsToCoins(gemAmount: Long) {
         viewModelScope.launch {
             val (success, message) = repository.convertGemsToCoins(gemAmount)
@@ -1068,6 +1092,15 @@ class RewardViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     // --- ADMIN PANEL ACTIONS ---
+    fun approveWithdrawal(
+        withdrawalId: Long,
+        voucherCode: String? = null,
+        utrRef: String? = null,
+        note: String? = null
+    ) {
+        approveWithdrawalWithVoucher(withdrawalId, voucherCode, utrRef, note)
+    }
+
     fun approveWithdrawalWithVoucher(
         withdrawalId: Long,
         voucherCode: String? = null,

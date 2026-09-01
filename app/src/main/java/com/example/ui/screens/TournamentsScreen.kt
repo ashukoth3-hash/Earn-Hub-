@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -66,6 +67,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.TournamentItem
+import com.example.data.model.UserStats
 import com.example.ui.theme.EmeraldGreen
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldOrange
@@ -75,11 +77,12 @@ import com.example.ui.theme.SkyBlue
 
 @Composable
 fun TournamentsScreen(
+    userStats: UserStats?,
     tournaments: List<TournamentItem>,
-    userCoins: Long,
     onJoinTournament: (TournamentItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val userCoins = userStats?.coins ?: 0L
     var selectedFilter by remember { mutableStateOf("ALL") }
     val clipboardManager = LocalClipboardManager.current
     var copiedRoomId by remember { mutableStateOf<String?>(null) }

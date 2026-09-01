@@ -22,8 +22,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ads.AdMobManager
 import com.example.ui.components.CelebrationDialog
 import com.example.ui.components.GemExchangeDialog
-import com.example.ui.components.MegaOfferChallengeDialog
-import com.example.ui.components.OfferwallPartnerDetailDialog
+import com.example.ui.components.MegaOfferDialog
+import com.example.ui.components.OfferwallDetailDialog
 import com.example.ui.components.RewardBottomNavBar
 import com.example.ui.components.RewardTopBar
 import com.example.ui.screens.AdminPanelScreen
@@ -315,11 +315,13 @@ fun RewardAppContent(
     // 💎 Mega & Super Offer Progression Dialog
     if (isMegaOfferDialogVisible) {
         val currentProgress = if (isSuperOfferMode) (userStats?.superOfferProgress ?: 0) else (userStats?.megaOfferProgress ?: 0)
-        MegaOfferChallengeDialog(
+        MegaOfferDialog(
+            isVisible = true,
             isSuperOffer = isSuperOfferMode,
-            currentProgress = currentProgress,
-            onStepAnswered = {
-                viewModel.progressMegaOfferStep()
+            progress = currentProgress,
+            question = viewModel.getActiveMegaQuestion(),
+            onAnswerSelected = { chosenIdx ->
+                viewModel.answerMegaOfferQuestion(chosenIdx)
             },
             onDismiss = { viewModel.closeMegaOffer() }
         )
@@ -327,10 +329,10 @@ fun RewardAppContent(
 
     // 🌐 Offerwall Detail Dialog
     activeOfferwallDetail?.let { partner ->
-        OfferwallPartnerDetailDialog(
+        OfferwallDetailDialog(
             partner = partner,
-            onActionTask = { actionTitle, coinsReward ->
-                viewModel.completeOfferwallAction(actionTitle, coinsReward)
+            onCompleteTask = { partnerName, coinsReward ->
+                viewModel.completeOfferwallTask(partnerName, coinsReward)
             },
             onDismiss = { viewModel.closeOfferwallDetail() }
         )
@@ -339,9 +341,9 @@ fun RewardAppContent(
     // 💎 Gem Exchange Dialog
     if (isGemExchangeVisible) {
         GemExchangeDialog(
-            currentGems = userStats?.gems ?: 0L,
-            onConvertGems = { gems, coins ->
-                viewModel.convertGemsToCoins(gems, coins)
+            gems = userStats?.gems ?: 0L,
+            onExchange = { gemAmount ->
+                viewModel.convertGemsToCoins(gemAmount)
             },
             onDismiss = { viewModel.closeGemExchangeDialog() }
         )

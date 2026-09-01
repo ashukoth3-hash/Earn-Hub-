@@ -357,7 +357,7 @@ fun TasksScreen(
                 items(scratchCards) { card ->
                     InteractiveScratchCard(
                         card = card,
-                        onCardScratched = { onScratchCard(card) }
+                        onScratched = { onScratchCard(card) }
                     )
                 }
             }

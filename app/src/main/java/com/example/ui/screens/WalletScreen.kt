@@ -87,14 +87,15 @@ import java.util.Locale
 data class RedeemOption(
     val id: String,
     val method: String,
-    val title: String,
     val amountFormatted: String,
     val coinsRequired: Long,
     val icon: ImageVector,
     val gradient: List<Color>,
     val requiresBankDetails: Boolean = false,
     val placeholderAccount: String
-)
+) {
+    val title: String get() = method
+}
 
 @Composable
 fun WalletScreen(
@@ -117,30 +118,30 @@ fun WalletScreen(
 
     val redeemOptions = listOf(
         // Google Play Redeem Code
-        RedeemOption("gp_50", "Google Play Redeem Code", "₹50 Code", 600, Icons.Default.Redeem, listOf(Color(0xFF0F9D58), Color(0xFF00796B)), false, "Google Account Email ID"),
-        RedeemOption("gp_100", "Google Play Redeem Code", "₹100 Code", 1200, Icons.Default.Redeem, listOf(Color(0xFF0F9D58), Color(0xFF00796B)), false, "Google Account Email ID"),
-        RedeemOption("gp_250", "Google Play Redeem Code", "₹250 Code", 2900, Icons.Default.Redeem, listOf(Color(0xFF0F9D58), Color(0xFF00796B)), false, "Google Account Email ID"),
-        RedeemOption("gp_500", "Google Play Redeem Code", "₹500 Code", 5500, Icons.Default.Redeem, listOf(Color(0xFF0F9D58), Color(0xFF00796B)), false, "Google Account Email ID"),
+        RedeemOption("gp_50", "Google Play Redeem Code", "₹50 Code", 600L, Icons.Default.Redeem, listOf(Color(0xFF0F9D58), Color(0xFF00796B)), false, "Google Account Email ID"),
+        RedeemOption("gp_100", "Google Play Redeem Code", "₹100 Code", 1200L, Icons.Default.Redeem, listOf(Color(0xFF0F9D58), Color(0xFF00796B)), false, "Google Account Email ID"),
+        RedeemOption("gp_250", "Google Play Redeem Code", "₹250 Code", 2900L, Icons.Default.Redeem, listOf(Color(0xFF0F9D58), Color(0xFF00796B)), false, "Google Account Email ID"),
+        RedeemOption("gp_500", "Google Play Redeem Code", "₹500 Code", 5500L, Icons.Default.Redeem, listOf(Color(0xFF0F9D58), Color(0xFF00796B)), false, "Google Account Email ID"),
 
         // UPI Transfer
-        RedeemOption("upi_50", "UPI (GPay/PhonePe/Paytm)", "₹50 Cash", 600, Icons.Default.Payment, listOf(Color(0xFF0284C7), Color(0xFF0369A1)), false, "UPI ID (e.g. yourname@okaxis / number@paytm)"),
-        RedeemOption("upi_100", "UPI (GPay/PhonePe/Paytm)", "₹100 Cash", 1200, Icons.Default.Payment, listOf(Color(0xFF0284C7), Color(0xFF0369A1)), false, "UPI ID (e.g. yourname@okaxis / number@paytm)"),
-        RedeemOption("upi_250", "UPI (GPay/PhonePe/Paytm)", "₹250 Cash", 2900, Icons.Default.Payment, listOf(Color(0xFF0284C7), Color(0xFF0369A1)), false, "UPI ID (e.g. yourname@okaxis / number@paytm)"),
-        RedeemOption("upi_500", "UPI (GPay/PhonePe/Paytm)", "₹500 Cash", 5500, Icons.Default.Payment, listOf(Color(0xFF0284C7), Color(0xFF0369A1)), false, "UPI ID (e.g. yourname@okaxis / number@paytm)"),
+        RedeemOption("upi_50", "UPI (GPay/PhonePe/Paytm)", "₹50 Cash", 600L, Icons.Default.Payment, listOf(Color(0xFF0284C7), Color(0xFF0369A1)), false, "UPI ID (e.g. yourname@okaxis / number@paytm)"),
+        RedeemOption("upi_100", "UPI (GPay/PhonePe/Paytm)", "₹100 Cash", 1200L, Icons.Default.Payment, listOf(Color(0xFF0284C7), Color(0xFF0369A1)), false, "UPI ID (e.g. yourname@okaxis / number@paytm)"),
+        RedeemOption("upi_250", "UPI (GPay/PhonePe/Paytm)", "₹250 Cash", 2900L, Icons.Default.Payment, listOf(Color(0xFF0284C7), Color(0xFF0369A1)), false, "UPI ID (e.g. yourname@okaxis / number@paytm)"),
+        RedeemOption("upi_500", "UPI (GPay/PhonePe/Paytm)", "₹500 Cash", 5500L, Icons.Default.Payment, listOf(Color(0xFF0284C7), Color(0xFF0369A1)), false, "UPI ID (e.g. yourname@okaxis / number@paytm)"),
 
         // Bank Transfer
-        RedeemOption("bank_100", "Direct Bank Transfer (IMPS)", "₹100 Bank", 1200, Icons.Default.AccountBalance, listOf(Color(0xFF4F46E5), Color(0xFF3730A3)), true, "Bank Account Number"),
-        RedeemOption("bank_250", "Direct Bank Transfer (IMPS)", "₹250 Bank", 2900, Icons.Default.AccountBalance, listOf(Color(0xFF4F46E5), Color(0xFF3730A3)), true, "Bank Account Number"),
-        RedeemOption("bank_500", "Direct Bank Transfer (IMPS)", "₹500 Bank", 5500, Icons.Default.AccountBalance, listOf(Color(0xFF4F46E5), Color(0xFF3730A3)), true, "Bank Account Number"),
+        RedeemOption("bank_100", "Direct Bank Transfer (IMPS)", "₹100 Bank", 1200L, Icons.Default.AccountBalance, listOf(Color(0xFF4F46E5), Color(0xFF3730A3)), true, "Bank Account Number"),
+        RedeemOption("bank_250", "Direct Bank Transfer (IMPS)", "₹250 Bank", 2900L, Icons.Default.AccountBalance, listOf(Color(0xFF4F46E5), Color(0xFF3730A3)), true, "Bank Account Number"),
+        RedeemOption("bank_500", "Direct Bank Transfer (IMPS)", "₹500 Bank", 5500L, Icons.Default.AccountBalance, listOf(Color(0xFF4F46E5), Color(0xFF3730A3)), true, "Bank Account Number"),
 
         // Amazon Gift Card
-        RedeemOption("amz_100", "Amazon Gift Card Voucher", "₹100 Gift Card", 1200, Icons.Default.ShoppingBag, listOf(Color(0xFFFF9900), Color(0xFFCC7A00)), false, "Amazon Account Email ID / Mobile"),
-        RedeemOption("amz_250", "Amazon Gift Card Voucher", "₹250 Gift Card", 2900, Icons.Default.ShoppingBag, listOf(Color(0xFFFF9900), Color(0xFFCC7A00)), false, "Amazon Account Email ID / Mobile"),
-        RedeemOption("amz_500", "Amazon Gift Card Voucher", "₹500 Gift Card", 5500, Icons.Default.ShoppingBag, listOf(Color(0xFFFF9900), Color(0xFFCC7A00)), false, "Amazon Account Email ID / Mobile"),
+        RedeemOption("amz_100", "Amazon Gift Card Voucher", "₹100 Gift Card", 1200L, Icons.Default.ShoppingBag, listOf(Color(0xFFFF9900), Color(0xFFCC7A00)), false, "Amazon Account Email ID / Mobile"),
+        RedeemOption("amz_250", "Amazon Gift Card Voucher", "₹250 Gift Card", 2900L, Icons.Default.ShoppingBag, listOf(Color(0xFFFF9900), Color(0xFFCC7A00)), false, "Amazon Account Email ID / Mobile"),
+        RedeemOption("amz_500", "Amazon Gift Card Voucher", "₹500 Gift Card", 5500L, Icons.Default.ShoppingBag, listOf(Color(0xFFFF9900), Color(0xFFCC7A00)), false, "Amazon Account Email ID / Mobile"),
 
         // Flipkart Gift Card
-        RedeemOption("fk_100", "Flipkart Gift Card Voucher", "₹100 Voucher", 1200, Icons.Default.ShoppingCart, listOf(Color(0xFF2874F0), Color(0xFF1B4FA0)), false, "Flipkart Account Email ID / Mobile"),
-        RedeemOption("fk_250", "Flipkart Gift Card Voucher", "₹250 Voucher", 2900, Icons.Default.ShoppingCart, listOf(Color(0xFF2874F0), Color(0xFF1B4FA0)), false, "Flipkart Account Email ID / Mobile")
+        RedeemOption("fk_100", "Flipkart Gift Card Voucher", "₹100 Voucher", 1200L, Icons.Default.ShoppingCart, listOf(Color(0xFF2874F0), Color(0xFF1B4FA0)), false, "Flipkart Account Email ID / Mobile"),
+        RedeemOption("fk_250", "Flipkart Gift Card Voucher", "₹250 Voucher", 2900L, Icons.Default.ShoppingCart, listOf(Color(0xFF2874F0), Color(0xFF1B4FA0)), false, "Flipkart Account Email ID / Mobile")
     )
 
     LazyColumn(

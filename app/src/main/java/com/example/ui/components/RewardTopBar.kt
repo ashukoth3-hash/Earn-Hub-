@@ -69,6 +69,7 @@ fun RewardTopBar(
     streakDays: Int,
     onWalletClick: () -> Unit,
     onStreakClick: () -> Unit,
+    onGemsClick: () -> Unit = {},
     onAdminClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
